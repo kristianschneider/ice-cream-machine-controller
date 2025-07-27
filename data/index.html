@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ice Cream Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html {
+      font-family: Arial, Helvetica, sans-serif; 
+      display: inline-block; 
+      text-align: center;
+    }
+    
+    h1 {
+      font-size: 1.8rem; 
+      color: white;
+    }
+    
+    p { 
+      font-size: 1.4rem;
+    }
+    
+    .topnav { 
+      overflow: hidden; 
+      background-color: #0A1128;
+      padding: 10px;
+    }
+    
+    body {  
+      margin: 0;
+    }
+    
+    .content { 
+      padding: 5%;
+    }
+    
+    .card-grid { 
+      max-width: 800px; 
+      margin: 0 auto; 
+      display: grid; 
+      grid-gap: 2rem; 
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+    
+    .card { 
+      background-color: white; 
+      box-shadow: 2px 2px 12px 1px rgba(140,140,140,.5);
+      padding: 20px;
+      border-radius: 8px;
+    }
+    
+    .card-title { 
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #034078;
+      margin-bottom: 15px;
+    }
+    
+    button {
+      border: none;
+      color: #FEFCFB;
+      padding: 15px 32px;
+      text-align: center;
+      font-size: 16px;
+      margin: 5px;
+      border-radius: 4px;
+      transition-duration: 0.4s;
+      cursor: pointer;
+    }
+    
+    .button-on {
+      background-color: #034078;
+    }
+    
+    .button-on:hover {
+      background-color: #1282A2;
+    }
+    
+    .button-off {
+      background-color: #858585;
+    }
+    
+    .button-off:hover {
+      background-color: #252524;
+    }
+    
+    .button-reset {
+      background-color: #ff6b6b;
+    }
+    
+    .button-reset:hover {
+      background-color: #ff5252;
+    }
+    
+    input[type=number] {
+      padding: 8px;
+      margin: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 100px;
+    }
+    
+    label {
+      display: block;
+      margin: 10px 0 5px 0;
+      font-weight: bold;
+    }
+    
+    .status {
+      font-size: 1.2rem;
+      color: #1282A2;
+      margin: 10px 0;
+    }
+    
+    .settings {
+      text-align: left;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="topnav">
+    <h1>Ice Cream Controller</h1>
+  </div>
+  <div class="content">
+    <div class="card-grid">
+      <div class="card">
+        <p class="card-title">System Status</p>
+        <p class="status">Temperature: <span id="temp">--</span> °C</p>
+        <p class="status">Compressor: <span id="compressor">--</span></p>
+      </div>
+      
+      <div class="card">
+        <p class="card-title">Compressor Control</p>
+        <div class="settings">
+          <label>
+            <input type="checkbox" id="use_timer"> Use Timer
+          </label>
+          <label>
+            Timer Duration (minutes):
+            <input type="number" id="timer" min="1" max="120" value="30">
+          </label>
+        </div>
+        <button class="button-on" onclick="startCompressor()">Start</button>
+        <button class="button-off" onclick="stopCompressor()">Stop</button>
+      </div>
+      
+      <div class="card">
+        <p class="card-title">WiFi Settings</p>
+        <p><small>Reset WiFi credentials to configure a new network</small></p>
+        <button class="button-reset" onclick="resetWiFi()">Reset WiFi Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function fetchStatus() {
+      try {
+        const res = await fetch("/status");
+        const data = await res.json();
+        document.getElementById("temp").innerText = data.temp.toFixed(1);
+        document.getElementById("compressor").innerText = data.compressor ? "ON" : "OFF";
+        document.getElementById("timer").value = data.timer_minutes;
+        document.getElementById("use_timer").checked = data.use_timer;
+      } catch (error) {
+        console.error('Error fetching status:', error);
+      }
+    }
+
+    async function startCompressor() {
+      const useTimer = document.getElementById("use_timer").checked;
+      const minutes = document.getElementById("timer").value;
+
+      const form = new FormData();
+      form.append("use_timer", useTimer);
+      form.append("timer_minutes", minutes);
+
+      try {
+        await fetch("/start", { method: "POST", body: form });
+        fetchStatus();
+      } catch (error) {
+        console.error('Error starting compressor:', error);
+      }
+    }
+
+    async function stopCompressor() {
+      try {
+        await fetch("/stop", { method: "POST" });
+        fetchStatus();
+      } catch (error) {
+        console.error('Error stopping compressor:', error);
+      }
+    }
+
+    async function resetWiFi() {
+      if (confirm("Are you sure you want to reset WiFi settings? The device will restart and you'll need to reconfigure WiFi.")) {
+        try {
+          await fetch("/reset-wifi", { method: "POST" });
+          alert("WiFi settings reset. Device is restarting...");
+        } catch (error) {
+          console.error('Error resetting WiFi:', error);
+        }
+      }
+    }
+
+    // Update status every 5 seconds
+    setInterval(fetchStatus, 5000);
+    
+    // Initial status fetch
+    window.onload = fetchStatus;
+  </script>
+</body>
+</html>
