@@ -55,9 +55,7 @@ ESP32 2-Channel Relay Module    Melissa Ice Cream Machine
 - [PlatformIO IDE](https://platformio.org/platformio-ide) or [PlatformIO Core](https://platformio.org/install/cli)
 - ESP32 drivers installed on your system
 
-### Installation
-
-Use VS code and platform.IO
+Use VS code and the platform.IO extension
 
 ### WiFi Setup
 
