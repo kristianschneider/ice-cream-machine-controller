@@ -181,26 +181,14 @@ lib_deps =
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+None. Go nuts
 
-## 👨‍💻 Author
-
-- **Your Name** - *Initial work* - [YourGitHub](https://github.com/yourusername)
 
 ## 🙏 Acknowledgments
 
 - [Random Nerd Tutorials](https://randomnerdtutorials.com/) for WiFi Manager implementation guidance
-- [ESP-IDF](https://github.com/espressif/esp-idf) team for the excellent ESP32 framework
-- [PlatformIO](https://platformio.org/) for the development environment
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-
-1. Check the [Issues](https://github.com/yourusername/ice-cream-machine-controller/issues) page
-2. Create a new issue with detailed description
-3. Include hardware setup and error messages
 
 ---
 
 **⚠️ Safety Notice**: This controller manages electrical relays and should only be used by individuals familiar with electrical safety. Always follow proper electrical safety procedures and local codes.
+Don't kill yourself
