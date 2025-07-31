@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Ice Cream Controller</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -137,6 +138,103 @@
     let countdownInterval = null;
     let localRemainingSeconds = null;
     let lastServerSync = null;
+    let tempChart = null;
+    let tempData = [];
+
+    function initTempChart() {
+      const canvas = document.getElementById('temp-chart');
+      tempChart = canvas.getContext('2d');
+      
+      // Set canvas size
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }
+
+    function drawTempChart(readings, targetTemp) {
+      if (!tempChart || readings.length === 0) return;
+      
+      const canvas = tempChart.canvas;
+      const width = canvas.width;
+      const height = canvas.height;
+      const padding = 40;
+      
+      // Clear canvas
+      tempChart.clearRect(0, 0, width, height);
+      
+      // Find min/max values for scaling
+      const temps = readings.map(r => r.temp);
+      const minTemp = Math.min(...temps, targetTemp) - 2;
+      const maxTemp = Math.max(...temps, targetTemp) + 2;
+      const tempRange = maxTemp - minTemp;
+      
+      const times = readings.map(r => r.time);
+      const minTime = Math.min(...times);
+      const maxTime = Math.max(...times);
+      const timeRange = maxTime - minTime;
+      
+      // Helper functions
+      const xPos = (time) => padding + ((time - minTime) / timeRange) * (width - 2 * padding);
+      const yPos = (temp) => height - padding - ((temp - minTemp) / tempRange) * (height - 2 * padding);
+      
+      // Draw axes
+      tempChart.strokeStyle = '#ccc';
+      tempChart.lineWidth = 1;
+      tempChart.beginPath();
+      tempChart.moveTo(padding, padding);
+      tempChart.lineTo(padding, height - padding);
+      tempChart.lineTo(width - padding, height - padding);
+      tempChart.stroke();
+      
+      // Draw target line
+      tempChart.strokeStyle = '#ff6b6b';
+      tempChart.lineWidth = 2;
+      tempChart.setLineDash([5, 5]);
+      tempChart.beginPath();
+      tempChart.moveTo(padding, yPos(targetTemp));
+      tempChart.lineTo(width - padding, yPos(targetTemp));
+      tempChart.stroke();
+      tempChart.setLineDash([]);
+      
+      // Draw temperature line
+      if (readings.length > 1) {
+        tempChart.strokeStyle = '#034078';
+        tempChart.lineWidth = 2;
+        tempChart.beginPath();
+        tempChart.moveTo(xPos(readings[0].time), yPos(readings[0].temp));
+        
+        for (let i = 1; i < readings.length; i++) {
+          tempChart.lineTo(xPos(readings[i].time), yPos(readings[i].temp));
+        }
+        tempChart.stroke();
+      }
+      
+      // Draw points
+      tempChart.fillStyle = '#034078';
+      for (const reading of readings) {
+        tempChart.beginPath();
+        tempChart.arc(xPos(reading.time), yPos(reading.temp), 3, 0, 2 * Math.PI);
+        tempChart.fill();
+      }
+      
+      // Add labels
+      tempChart.fillStyle = '#666';
+      tempChart.font = '12px Arial';
+      tempChart.textAlign = 'left';
+      tempChart.fillText(`${maxTemp.toFixed(1)}°C`, 5, padding + 5);
+      tempChart.fillText(`${minTemp.toFixed(1)}°C`, 5, height - padding - 5);
+      tempChart.textAlign = 'center';
+      tempChart.fillText(`Target: ${targetTemp}°C`, width / 2, 15);
+    }
+
+    async function fetchTempHistory() {
+      try {
+        const res = await fetch("/temp-history");
+        const data = await res.json();
+        drawTempChart(data.readings, data.target);
+      } catch (error) {
+        console.error('Error fetching temperature history:', error);
+      }
+    }
 
     function formatTime(totalSeconds) {
       if (totalSeconds === null || totalSeconds <= 0) return "--:--";
@@ -185,6 +283,18 @@
         document.getElementById("temp").innerText = data.temp.toFixed(1);
         document.getElementById("compressor").innerText = data.compressor ? "ON" : "OFF";
         document.getElementById("timer").value = data.timer_minutes;
+        
+        // Update target temperature input
+        document.getElementById("target-temp").value = data.target_temp;
+        
+        // Update temperature prediction
+        const predictionElement = document.getElementById("temp-prediction");
+        if (data.time_to_target > 0) {
+          predictionElement.innerText = `Estimated time to target: ${data.time_to_target} minutes`;
+          predictionElement.style.display = "block";
+        } else {
+          predictionElement.style.display = "none";
+        }
 
         if (data.remaining_seconds !== null && data.remaining_seconds > 0) {
           if (localRemainingSeconds === null || Math.abs(localRemainingSeconds - data.remaining_seconds) > 2) {
@@ -242,8 +352,32 @@
       }
     }
 
+    async function setTargetTemperature() {
+      const targetTemp = document.getElementById("target-temp").value;
+
+      const form = new FormData();
+      form.append("target_temp", targetTemp);
+
+      try {
+        await fetch("/set-target", { method: "POST", body: form });
+        fetchStatus();
+        fetchTempHistory();
+      } catch (error) {
+        console.error('Error setting target temperature:', error);
+      }
+    }
+
+    // Update status every 5 seconds
     setInterval(fetchStatus, 5000);
-    window.onload = fetchStatus;
+    // Update chart every 5 seconds
+    setInterval(fetchTempHistory, 5000);
+    
+    // Initial load
+    window.onload = function() {
+      initTempChart();
+      fetchStatus();
+      fetchTempHistory();
+    };
   </script>
 </head>
 <body>

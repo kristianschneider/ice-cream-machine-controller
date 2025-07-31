@@ -26,17 +26,17 @@ unsigned long compressor_start_time = 0;
 bool compressor_active = false;
 
 // Temperature tracking variables
-float target_temperature = -5.0; // Default target temperature in Celsius
+float target_temperature = -15.0; // Default target temperature in Celsius
 struct TempReading {
   unsigned long timestamp;
   float temperature;
 };
-const int MAX_TEMP_READINGS = 100; // Store last 100 readings
+const int MAX_TEMP_READINGS = 200; // Store last 100 readings
 TempReading tempHistory[MAX_TEMP_READINGS];
 int tempHistoryIndex = 0;
 bool tempHistoryFull = false;
 unsigned long lastTempReading = 0;
-const unsigned long TEMP_READING_INTERVAL = 30000; // Read every 30 seconds
+const unsigned long TEMP_READING_INTERVAL = 5000; // Read every 5 seconds
 
 float readTemperatureC() {
   int adc = analogRead(NTC_PIN);
