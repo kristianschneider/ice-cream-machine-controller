@@ -33,16 +33,16 @@ This project was created to replace the original control system of the [Melissa 
 
 ### Pin Configuration
 ```
-GPIO 26 - Master Relay Control (Relay 1 on module)
-GPIO 27 - Compressor Relay Control (Relay 2 on module)
+GPIO 16 - Master Relay Control (Relay 1 on module)
+GPIO 17 - Compressor Relay Control (Relay 2 on module)
 GPIO 34 - NTC Temperature Sensor (Analog Input - from cooling bowl)
 ```
 
 ### Wiring Diagram
 ```
 ESP32 2-Channel Relay Module    Melissa Ice Cream Machine
-├── Relay 1 (GPIO 26) ────────── Master Power Control
-├── Relay 2 (GPIO 27) ────────── Compressor Control
+├── Relay 1 (GPIO 16) ────────── Master Power Control
+├── Relay 2 (GPIO 17) ────────── Compressor Control
 ├── GPIO 34 ──────────────────── NTC Thermistor (embedded in cooling bowl via 10kΩ divider)
 ├── 3.3V ─────────────────────── NTC Voltage Divider
 ├── GND ──────────────────────── Common Ground
@@ -59,21 +59,19 @@ Use VS code and the platform.IO extension
 
 ### WiFi Setup
 
-On first boot or when WiFi credentials are not available:
+The device operates as a WiFi Access Point with automatic captive portal:
 
 1. **Access Point Mode**: The device creates a WiFi hotspot named `IceCreamController`
 2. **Connect to AP**: Join the network (no password required)
-3. **Configure WiFi**: Navigate to `192.168.4.1` in your browser
-4. **Enter Credentials**: Fill in your WiFi SSID, password, and IP settings
-5. **Save & Restart**: Device will restart and connect to your network
+3. **Automatic Redirect**: Your device should automatically open a browser and redirect to the ice cream controller interface
+4. **Manual Access**: If automatic redirect doesn't work, manually navigate to `192.168.4.1` in your browser
 
-### Network Configuration
+**How Captive Portal Works:**
 
-The WiFi manager allows you to set:
-- **SSID**: Your WiFi network name
-- **Password**: Your WiFi network password  
-- **IP Address**: Static IP for the controller
-- **Gateway**: Your router's IP address
+- When you connect to the WiFi network, your device will try to detect internet connectivity
+- The ESP32 intercepts these detection requests and redirects them to the controller interface
+- This works with most modern devices including smartphones, tablets, and laptops
+- Supports detection methods used by Android, iOS, Windows, and other operating systems
 
 ## 🖥️ Web Interface
 
@@ -149,7 +147,69 @@ lib_deps =
 5. **Control Operation**: Start/stop compressor with optional timer
 6. **Safety**: Use master relay for emergency shutdown
 
-## 🔧 Troubleshooting
+## � Over-The-Air (OTA) Updates
+
+The controller supports OTA (Over-The-Air) firmware updates, allowing you to update the code wirelessly without physical access to the device.
+
+### How OTA Works
+
+1. **Initial Setup**: After first WiFi connection, OTA server starts automatically
+2. **Network Discovery**: Device appears as "IceCreamController" on your network
+3. **Secure Updates**: Optional password protection for update security
+4. **Progress Monitoring**: Real-time update progress via serial monitor
+
+### Using OTA Updates
+
+#### Method 1: PlatformIO IDE
+1. **Configure Upload**: In `platformio.ini`, uncomment and set:
+   ```ini
+   upload_protocol = espota
+   upload_port = 192.168.1.100  ; Your ESP32's IP address
+   upload_flags = --auth=your_ota_password  ; If password enabled
+   ```
+
+2. **Upload Firmware**: Use normal upload button - PlatformIO will upload wirelessly
+
+#### Method 2: Arduino IDE
+1. **Tools > Port**: Select your ESP32's network port (e.g., "IceCreamController at 192.168.1.100")
+2. **Upload**: Use normal upload process
+
+#### Method 3: Command Line
+```bash
+# Using platformio
+pio run --target upload --upload-port 192.168.1.100
+
+# Using Arduino IDE tools
+arduino-cli upload --fqbn esp32:esp32:esp32 --port 192.168.1.100
+```
+
+### OTA API Endpoint
+
+- **GET `/ota-info`**: Returns OTA status information
+  ```json
+  {
+    "hostname": "IceCreamController",
+    "ip": "192.168.1.100",
+    "free_heap": 234560,
+    "uptime": 3600
+  }
+  ```
+
+### OTA Safety Features
+
+- **Progress Monitoring**: Visual progress indication during updates
+- **Error Handling**: Automatic rollback on failed updates
+- **Service Continuity**: Ice cream controller remains operational until update starts
+- **Auto-Recovery**: Device restarts automatically after successful update
+
+### Troubleshooting OTA
+
+- **Device Not Found**: Check IP address and ensure device is connected to WiFi
+- **Authentication Failed**: Verify OTA password if enabled
+- **Upload Timeout**: Ensure stable WiFi connection and device isn't overloaded
+- **Permission Errors**: Check firewall settings on development machine
+
+## �🔧 Troubleshooting
 
 ### Melissa Machine Integration
 - **ESP32 relay module compatibility**: Connect the 2-channel relay outputs directly to the original compressor and power connections
